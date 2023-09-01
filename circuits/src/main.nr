@@ -3,6 +3,15 @@ global CANDIDATES: Field = 2;
 use dep::std;
 use dep::ecrecover;
 
+// Recover the signer's address from signature, hashed message and public key.
+
+// Check whether the address is included in the polynomial. To do this, you will have to make sure the evaluation of polynomial at address is 0.
+
+// Check the given nullifier is a valid hash of signature. We are using blake hash for hashing signature. The hash is already implemented and can be accessed via std::hash::blake2s
+
+// Prover.toml file already has sample inputs. You can regenerate the inputs using the following command
+
+
 fn main(
   pub_key: [u8; 64],
   signature: [u8; 64],
@@ -12,10 +21,38 @@ fn main(
   nullifier: pub [u8; 32],
 ) {
   // Write your main logic here
+  let key = ecrecover::secp256k1::PubKey::from_unified(pub_key);
+  let addr = key.to_eth_address();
+  std::println(addr);
+
+  // Check whether the address is included in the polynomial.
+  let eval = evaluate_polynomial(polynomial, addr);
+  assert(eval == 0);
+ 
+  // let address = ecrecover::ecrecover(key_a, key_b, signature, hashed_message);
+  // assert(evaluate_polynomial(polynomial, address) == 0);
+   //Check the given nullifier is a valid hash of signature.
+  let calculated_nullifier = std::hash::blake2s(signature);
+  assert(calculated_nullifier == nullifier);
+
+  let polynomial_hash = std::hash::pedersen(polynomial);
+  assert(polynomial_hash[0] == polynomial_commitment);
+
+  //
+
 }
 
 fn evaluate_polynomial(polynomial: [Field; CANDIDATES + 1], x: Field) -> Field {
   // Write logic to evaluate polynomial here
+  // (x-a)(x-b) = x^2 - x(a+b) +ab;
+  let mut mult: Field = 1;
+  let mut res: Field = 0;
+  for i in 0..(CANDIDATES+1) {
+    res = mult * polynomial[i] + res;
+    res = res * x;
+  }
+  res
+  
 }
 
 #[test]
